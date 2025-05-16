@@ -1,0 +1,204 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deepfake Detection</title>
+<style>
+body {
+font-family: Arial, sans-serif;
+max-width: 800px;
+margin: 0 auto;
+padding: 20px;
+line-height: 1.6;
+ }
+.container {
+background-color: #f9f9f9;
+border-radius: 8px;
+padding: 20px;
+box-shadow: 0 0 10px rgba(0,0,0,0.1);
+ }
+h1 {
+color: #333;
+text-align: center;
+ }
+.upload-section {
+margin: 20px 0;
+text-align: center;
+ }
+#upload-form {
+margin-bottom: 20px;
+ }
+#result-section {
+display: none;
+margin-top: 30px;
+ }
+#preview-image {
+max-width: 100%;
+max-height: 300px;
+margin: 20px auto;
+display: block;
+border-radius: 4px;
+ }
+.result-card {
+background-color: white;
+padding: 20px;
+border-radius: 8px;
+box-shadow: 0 0 5px rgba(0,0,0,0.1);
+ }
+.prediction {
+font-size: 24px;
+font-weight: bold;
+text-align: center;
+margin: 20px 0;
+ }
+.real {
+color: #28a745;
+ }
+.fake {
+color: #dc3545;
+ }
+.confidence-bars {
+margin: 20px 0;
+ }
+.bar-label {
+display: flex;
+justify-content: space-between;
+margin-bottom: 5px;
+ }
+.progress-bar {
+height: 20px;
+background-color: #e9ecef;
+border-radius: 4px;
+overflow: hidden;
+margin-bottom: 15px;
+ }
+.progress {
+height: 100%;
+background-color: #007bff;
+transition: width 0.5s ease;
+ }
+button {
+background-color: #007bff;
+color: white;
+border: none;
+padding: 10px 20px;
+border-radius: 4px;
+cursor: pointer;
+font-size: 16px;
+ }
+button:hover {
+background-color: #0069d9;
+ }
+.loading {
+text-align: center;
+display: none;
+margin: 20px 0;
+ }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Image-Forgery Detection</h1>
+<p>Upload an image to check if it's real or computer-generated/manipulated.</p>
+<div class="upload-section">
+<form id="upload-form" enctype="multipart/form-data">
+<input type="file" id="image-upload" name="image" accept=".jpg, .jpeg, .png" required>
+<button type="submit" id="submit-btn">Analyze Image</button>
+</form>
+<div class="loading" id="loading">
+ Analyzing image... Please wait.
+</div>
+</div>
+<div id="result-section">
+<img id="preview-image" src="" alt="Uploaded image">
+<div class="result-card">
+<div id="prediction" class="prediction"></div>
+<div class="confidence-bars">
+<h3>Model Confidence Scores</h3>
+<div class="bar-label">
+<span>MobileNet:</span>
+<span id="mobilenet-score">0%</span>
+</div>
+<div class="progress-bar">
+<div id="mobilenet-bar" class="progress" style="width: 0%"></div>
+</div>
+<div class="bar-label">
+<span>EfficientNet:</span>
+<span id="efficientnet-score">0%</span>
+</div>
+<div class="progress-bar">
+<div id="efficientnet-bar" class="progress" style="width: 0%"></div>
+</div>
+<div class="bar-label">
+<span>SVM:</span>
+<span id="svm-score">0%</span>
+</div>
+<div class="progress-bar">
+<div id="svm-bar" class="progress" style="width: 0%"></div>
+</div>
+<div class="bar-label">
+<span>Combined Score:</span>
+<span id="combined-score">0%</span>
+</div>
+<div class="progress-bar">
+<div id="combined-bar" class="progress" style="width: 0%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+document.getElementById('upload-form').addEventListener('submit', function(e) {
+e.preventDefault();
+const formData = new FormData(this);
+const fileInput = document.getElementById('image-upload');
+if (!fileInput.files.length) {
+alert('Please select an image to upload');
+return;
+ }
+// Show loading indicator
+document.getElementById('loading').style.display = 'block';
+document.getElementById('result-section').style.display = 'none';
+fetch('/predict', {
+method: 'POST',
+body: formData
+ })
+ .then(response => response.json())
+ .then(data => {
+// Hide loading indicator
+document.getElementById('loading').style.display = 'none';
+if (data.error) {
+alert(data.error);
+return;
+ }
+// Display results
+document.getElementById('preview-image').src = data.image_path;
+const predictionElement = document.getElementById('prediction');
+predictionElement.textContent = data.prediction;
+predictionElement.className = data.is_real ? 'prediction real' : 'prediction fake';
+// Update confidence bars
+const mobilenetScore = Math.round(data.mobilenet_confidence * 100);
+const efficientnetScore = Math.round(data.efficientnet_confidence * 100);
+const svmScore = Math.round(data.svm_confidence * 100);
+const combinedScore = Math.round(data.combined_confidence * 100);
+document.getElementById('mobilenet-score').textContent = mobilenetScore + '%';
+document.getElementById('efficientnet-score').textContent = efficientnetScore + '%';
+document.getElementById('svm-score').textContent = svmScore + '%';
+document.getElementById('combined-score').textContent = combinedScore + '%';
+document.getElementById('mobilenet-bar').style.width = mobilenetScore + '%';
+document.getElementById('efficientnet-bar').style.width = efficientnetScore + '%';
+document.getElementById('svm-bar').style.width = svmScore + '%';
+document.getElementById('combined-bar').style.width = combinedScore + '%';
+// Show result section
+document.getElementById('result-section').style.display = 'block';
+ })
+ .catch(error => {
+document.getElementById('loading').style.display = 'none';
+alert('Error: ' + error);
+ });
+ });
+</script>
+</body>
+</html>
